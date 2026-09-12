@@ -1,24 +1,19 @@
 {
   "expo": {
-    "name": "wings-arena-app",
+    "name": "Wings Arena",
     "slug": "wings-arena-app",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.avmannino.wingsarenaapp"
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      "package": "com.avmannino.wingsarenaapp"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      "expo-notifications"
+    ]
   }
 }
