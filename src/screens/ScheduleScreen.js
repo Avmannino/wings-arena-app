@@ -1,6 +1,8 @@
 import {
   Fragment,
   useMemo,
+  useRef,
+  useState,
 } from "react";
 
 import {
@@ -77,6 +79,8 @@ function getOrganizationLabel(
 
 function EventRow({
   event,
+  tinted,
+  dayStart,
 }) {
   const organizationColor =
     getOrganizationColor(
@@ -85,9 +89,13 @@ function EventRow({
 
   return (
     <View
-      style={
-        styles.eventRow
-      }
+      style={[
+        styles.eventRow,
+        tinted &&
+          styles.eventRowTinted,
+        dayStart &&
+          styles.eventRowDayStart,
+      ]}
     >
       <View
         style={
@@ -245,6 +253,9 @@ export default function ScheduleScreen() {
   const sections =
     useMemo(
       () => {
+        const todayKey =
+          getEasternDateKey();
+
         const grouped =
           new Map();
 
@@ -256,6 +267,13 @@ export default function ScheduleScreen() {
             getEasternDateKey(
               event.start
             );
+
+          if (
+            key <
+            todayKey
+          ) {
+            continue;
+          }
 
           if (
             !grouped.has(
@@ -278,16 +296,30 @@ export default function ScheduleScreen() {
         return [
           ...grouped.entries(),
         ].map(
-          ([
-            key,
-            data,
-          ]) => ({
+          (
+            [
+              key,
+              data,
+            ],
+            index
+          ) => ({
             key,
 
             title:
-              formatDateHeadingFromKey(
-                key
-              ),
+              key ===
+              todayKey
+                ? `${formatDateHeadingFromKey(
+                    key
+                  )} (Today)`
+                : formatDateHeadingFromKey(
+                    key
+                  ),
+
+            colorIndex:
+              index % 2,
+
+            first:
+              index === 0,
 
             data,
           })
@@ -296,6 +328,62 @@ export default function ScheduleScreen() {
 
       [events]
     );
+
+  const [
+    currentSectionKey,
+    setCurrentSectionKey,
+  ] =
+    useState(
+      null
+    );
+
+  const currentSection =
+    useMemo(
+      () =>
+        sections.find(
+          (section) =>
+            section.key ===
+            currentSectionKey
+        ) ||
+        sections[0] ||
+        null,
+
+      [
+        sections,
+        currentSectionKey,
+      ]
+    );
+
+  const onViewableItemsChanged =
+    useRef(
+      ({
+        viewableItems,
+      }) => {
+        const firstVisible =
+          viewableItems.find(
+            (viewable) =>
+              viewable.isViewable &&
+              viewable.section
+          );
+
+        if (
+          firstVisible
+            ?.section
+            ?.key
+        ) {
+          setCurrentSectionKey(
+            firstVisible
+              .section
+              .key
+          );
+        }
+      }
+    ).current;
+
+  const viewabilityConfig =
+    useRef({
+      itemVisiblePercentThreshold: 1,
+    }).current;
 
   return (
     <SafeAreaView
@@ -328,16 +416,46 @@ export default function ScheduleScreen() {
         >
           Schedule
         </Text>
-
-        <Text
-          style={
-            styles.subtitle
-          }
-        >
-          Combined Wings, GSC and
-          Stateline events
-        </Text>
       </View>
+
+      {currentSection &&
+      !(
+        loading &&
+        !events.length
+      ) ? (
+        <View
+          style={[
+            styles.sectionHeader,
+            currentSection
+              .colorIndex ===
+              1 &&
+              styles.sectionHeaderTinted,
+          ]}
+        >
+          <Text
+            style={
+              styles.sectionTitle
+            }
+          >
+            {
+              currentSection.title
+            }
+          </Text>
+
+          <Text
+            style={
+              styles.sectionCount
+            }
+          >
+            {
+              currentSection
+                .data
+                .length
+            }{" "}
+            events
+          </Text>
+        </View>
+      ) : null}
 
       {loading &&
       !events.length ? (
@@ -375,43 +493,24 @@ export default function ScheduleScreen() {
 
           renderItem={({
             item,
+            index,
+            section,
           }) => (
             <EventRow
               event={
                 item
               }
-            />
-          )}
-
-          renderSectionHeader={({
-            section,
-          }) => (
-            <View
-              style={
-                styles.sectionHeader
+              tinted={
+                section
+                  .colorIndex ===
+                1
               }
-            >
-              <Text
-                style={
-                  styles.sectionTitle
-                }
-              >
-                {section.title}
-              </Text>
-
-              <Text
-                style={
-                  styles.sectionCount
-                }
-              >
-                {
-                  section
-                    .data
-                    .length
-                }{" "}
-                events
-              </Text>
-            </View>
+              dayStart={
+                index ===
+                  0 &&
+                !section.first
+              }
+            />
           )}
 
           contentContainerStyle={
@@ -424,6 +523,14 @@ export default function ScheduleScreen() {
 
           stickySectionHeadersEnabled={
             false
+          }
+
+          onViewableItemsChanged={
+            onViewableItemsChanged
+          }
+
+          viewabilityConfig={
+            viewabilityConfig
           }
 
           refreshControl={
@@ -518,6 +625,9 @@ const styles =
 
       alignSelf:
         "flex-start",
+
+      marginBottom:
+        14,
     },
 
     title: {
@@ -532,26 +642,9 @@ const styles =
 
       letterSpacing:
         -0.8,
-
-      marginTop:
-        4,
-    },
-
-    subtitle: {
-      color:
-        colors.textSecondary,
-
-      fontSize:
-        12,
-
-      marginTop:
-        5,
     },
 
     listContent: {
-      paddingHorizontal:
-        20,
-
       paddingBottom:
         36,
     },
@@ -566,20 +659,25 @@ const styles =
       justifyContent:
         "space-between",
 
-      marginTop:
-        28,
+      backgroundColor:
+        colors.background,
 
-      marginBottom:
-        12,
+      paddingHorizontal:
+        20,
+
+      paddingTop:
+        8,
 
       paddingBottom:
-        9,
+        8,
 
-      borderBottomWidth:
-        1,
+      marginBottom:
+        4,
+    },
 
-      borderBottomColor:
-        colors.border,
+    sectionHeaderTinted: {
+      backgroundColor:
+        colors.surface,
     },
 
     sectionTitle: {
@@ -590,7 +688,7 @@ const styles =
         16,
 
       fontWeight:
-        "650",
+        "800",
     },
 
     sectionCount: {
@@ -610,6 +708,19 @@ const styles =
 
       minHeight:
         82,
+
+      paddingHorizontal:
+        20,
+    },
+
+    eventRowTinted: {
+      backgroundColor:
+        colors.surface,
+    },
+
+    eventRowDayStart: {
+      marginTop:
+        20,
     },
 
     timeColumn: {
@@ -710,6 +821,12 @@ const styles =
       alignItems:
         "center",
 
+      flexWrap:
+        "wrap",
+
+      rowGap:
+        4,
+
       marginTop:
         7,
     },
@@ -759,6 +876,9 @@ const styles =
 
       fontWeight:
         "700",
+
+      flexShrink:
+        1,
     },
 
     lockerValue: {
@@ -806,6 +926,9 @@ const styles =
 
       marginTop:
         12,
+
+      marginHorizontal:
+        20,
     },
 
     errorTitle: {
@@ -836,6 +959,9 @@ const styles =
     empty: {
       paddingVertical:
         70,
+
+      paddingHorizontal:
+        20,
 
       alignItems:
         "center",
