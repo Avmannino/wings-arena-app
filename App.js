@@ -23,6 +23,7 @@ import {
 
 import HomeScreen from "./src/screens/HomeScreen";
 import ScheduleScreen from "./src/screens/ScheduleScreen";
+import IceCutsScreen from "./src/screens/IceCutsScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 
 import {
@@ -76,6 +77,14 @@ function getTabIcon(
     return focused
       ? "calendar"
       : "calendar-outline";
+  }
+
+  if (
+    routeName === "Ice Cuts"
+  ) {
+    return focused
+      ? "snow"
+      : "snow-outline";
   }
 
   return focused
@@ -177,6 +186,13 @@ export default function App() {
               name="Schedule"
               component={
                 ScheduleScreen
+              }
+            />
+
+            <Tab.Screen
+              name="Ice Cuts"
+              component={
+                IceCutsScreen
               }
             />
 

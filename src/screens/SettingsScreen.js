@@ -175,7 +175,7 @@ export default function SettingsScreen({
         >
           <Image
             source={require(
-              "../../assets/wings+.png"
+              "../../assets/wings-logo.png"
             )}
             style={
               styles.headerLogo
@@ -365,7 +365,7 @@ export default function SettingsScreen({
                 styles.sourceCount
               }
             >
-              {meta?.googleCount ??
+              {meta?.scheduleCount ??
                 "—"}
             </Text>
           </View>

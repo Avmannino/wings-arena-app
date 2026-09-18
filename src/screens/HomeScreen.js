@@ -19,6 +19,8 @@ import {
   View,
 } from "react-native";
 
+import Ionicons from "@expo/vector-icons/Ionicons";
+
 import {
   SafeAreaView,
 } from "react-native-safe-area-context";
@@ -45,6 +47,10 @@ import {
 import {
   parseLockerEntries,
 } from "../utils/lockers";
+
+import {
+  computeIceCuts,
+} from "../utils/iceCuts";
 
 function getOrganizationColor(
   organization
@@ -767,6 +773,42 @@ export default function HomeScreen({
       ]
     );
 
+  const nextIceCut =
+    useMemo(
+      () => {
+        const nowMs =
+          now.getTime();
+
+        return (
+          computeIceCuts(
+            events
+          )
+            .filter(
+              (cut) =>
+                new Date(
+                  cut.time
+                ).getTime() >
+                nowMs
+            )
+            .sort(
+              (a, b) =>
+                new Date(
+                  a.time
+                ).getTime() -
+                new Date(
+                  b.time
+                ).getTime()
+            )[0] ||
+          null
+        );
+      },
+
+      [
+        events,
+        now,
+      ]
+    );
+
   const futureEvents =
     useMemo(
       () =>
@@ -916,7 +958,7 @@ export default function HomeScreen({
             >
               <Image
                 source={require(
-                  "../../assets/wings+.png"
+                  "../../assets/wings-logo.png"
                 )}
                 style={
                   styles.headerLogo
@@ -959,6 +1001,57 @@ export default function HomeScreen({
             </Text>
           </View>
         </View>
+
+        {nextIceCut ? (
+          <Pressable
+            style={
+              styles.iceCutBanner
+            }
+            onPress={() =>
+              navigation.navigate(
+                "Ice Cuts"
+              )
+            }
+          >
+            <Ionicons
+              name="snow"
+              size={
+                16
+              }
+              color={
+                colors.accent
+              }
+            />
+
+            <View
+              style={
+                styles.iceCutCopy
+              }
+            >
+              <Text
+                style={
+                  styles.iceCutLabel
+                }
+              >
+                NEXT ICE CUT
+              </Text>
+
+              <Text
+                style={
+                  styles.iceCutDetail
+                }
+              >
+                {formatTime(
+                  nextIceCut.time
+                )}{" "}
+                · After{" "}
+                {
+                  nextIceCut.afterTitle
+                }
+              </Text>
+            </View>
+          </Pressable>
+        ) : null}
 
         {loading &&
         !events.length ? (
@@ -1231,6 +1324,71 @@ const styles =
 
       letterSpacing:
         1,
+    },
+
+    iceCutBanner: {
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      gap:
+        10,
+
+      backgroundColor:
+        colors.accentSoft,
+
+      borderWidth:
+        1,
+
+      borderColor:
+        colors.border,
+
+      borderRadius:
+        10,
+
+      paddingHorizontal:
+        14,
+
+      paddingVertical:
+        10,
+
+      marginBottom:
+        16,
+    },
+
+    iceCutCopy: {
+      flex:
+        1,
+    },
+
+    iceCutLabel: {
+      color:
+        colors.accent,
+
+      fontSize:
+        9,
+
+      fontWeight:
+        "700",
+
+      letterSpacing:
+        1,
+    },
+
+    iceCutDetail: {
+      color:
+        colors.textSecondary,
+
+      fontSize:
+        12,
+
+      fontWeight:
+        "600",
+
+      marginTop:
+        2,
     },
 
     loadingContainer: {

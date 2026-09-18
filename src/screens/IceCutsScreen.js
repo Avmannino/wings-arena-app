@@ -1,5 +1,4 @@
 import {
-  Fragment,
   useMemo,
   useRef,
   useState,
@@ -8,7 +7,6 @@ import {
 import {
   ActivityIndicator,
   Image,
-  Pressable,
   RefreshControl,
   SectionList,
   StyleSheet,
@@ -35,8 +33,8 @@ import {
 } from "../utils/dateTime";
 
 import {
-  parseLockerEntries,
-} from "../utils/lockers";
+  computeIceCuts,
+} from "../utils/iceCuts";
 
 function getOrganizationColor(
   organization
@@ -58,44 +56,24 @@ function getOrganizationColor(
   return colors.wings;
 }
 
-function getOrganizationLabel(
-  organization
-) {
-  if (
-    organization ===
-    "Stateline"
-  ) {
-    return "STATELINE";
-  }
-
-  if (
-    organization ===
-    "GSC"
-  ) {
-    return "GSC";
-  }
-
-  return "WINGS";
-}
-
-function EventRow({
-  event,
+function IceCutRow({
+  cut,
   tinted,
   dayStart,
 }) {
   const organizationColor =
     getOrganizationColor(
-      event.organization
+      cut.afterOrganization
     );
 
   return (
     <View
       style={[
-        styles.eventRow,
+        styles.cutRow,
         tinted &&
-          styles.eventRowTinted,
+          styles.cutRowTinted,
         dayStart &&
-          styles.eventRowDayStart,
+          styles.cutRowDayStart,
       ]}
     >
       <View
@@ -105,21 +83,11 @@ function EventRow({
       >
         <Text
           style={
-            styles.startTime
+            styles.cutTime
           }
         >
           {formatTime(
-            event.start
-          )}
-        </Text>
-
-        <Text
-          style={
-            styles.endTime
-          }
-        >
-          {formatTime(
-            event.end
+            cut.time
           )}
         </Text>
       </View>
@@ -148,103 +116,31 @@ function EventRow({
 
       <View
         style={
-          styles.eventDetails
+          styles.cutDetails
         }
       >
         <Text
           style={
-            styles.eventTitle
+            styles.cutLabel
           }
         >
-          {event.title}
+          Ice cut
         </Text>
 
-        <View
+        <Text
           style={
-            styles.metaRow
+            styles.cutSubtitle
           }
         >
-          <Text
-            style={[
-              styles.organization,
-              {
-                color:
-                  organizationColor,
-              },
-            ]}
-          >
-            {getOrganizationLabel(
-              event.organization
-            )}
-          </Text>
-
-          {event.type ? (
-            <>
-              <View
-                style={
-                  styles.metaDot
-                }
-              />
-
-              <Text
-                style={
-                  styles.eventType
-                }
-              >
-                {event.type}
-              </Text>
-            </>
-          ) : null}
-
-          {event.lockerNumber ? (
-            <>
-              <View
-                style={
-                  styles.metaDot
-                }
-              />
-
-              <Text
-                style={
-                  styles.lockerText
-                }
-              >
-                LOCKERS{" "}
-                {parseLockerEntries(
-                  event.lockerNumber
-                ).map(
-                  (entry, index) => (
-                    <Fragment
-                      key={
-                        index
-                      }
-                    >
-                      {index > 0
-                        ? ", "
-                        : ""}
-                      <Text
-                        style={
-                          styles.lockerValue
-                        }
-                      >
-                        {entry.id}
-                      </Text>
-                      {entry.rest}
-                    </Fragment>
-                  )
-                )}
-              </Text>
-            </>
-          ) : null}
-        </View>
+          After{" "}
+          {cut.afterTitle}
+        </Text>
       </View>
     </View>
   );
 }
 
-export default function ScheduleScreen({
-  navigation,
-}) {
+export default function IceCutsScreen() {
   const {
     events,
     loading,
@@ -252,6 +148,16 @@ export default function ScheduleScreen({
     error,
     refresh,
   } = useSchedule();
+
+  const cuts =
+    useMemo(
+      () =>
+        computeIceCuts(
+          events
+        ),
+
+      [events]
+    );
 
   const sections =
     useMemo(
@@ -263,20 +169,13 @@ export default function ScheduleScreen({
           new Map();
 
         for (
-          const event of
-          events
+          const cut of
+          cuts
         ) {
           const key =
             getEasternDateKey(
-              event.start
+              cut.time
             );
-
-          if (
-            key <
-            todayKey
-          ) {
-            continue;
-          }
 
           if (
             !grouped.has(
@@ -292,7 +191,7 @@ export default function ScheduleScreen({
           grouped
             .get(key)
             .push(
-              event
+              cut
             );
         }
 
@@ -329,7 +228,7 @@ export default function ScheduleScreen({
         );
       },
 
-      [events]
+      [cuts]
     );
 
   const [
@@ -402,35 +301,22 @@ export default function ScheduleScreen({
           styles.header
         }
       >
-        <Pressable
+        <Image
+          source={require(
+            "../../assets/wings-logo.png"
+          )}
           style={
-            styles.headerLogoButton
+            styles.headerLogo
           }
-          onPress={() =>
-            navigation.navigate(
-              "Home"
-            )
-          }
-          accessibilityRole="button"
-          accessibilityLabel="Go to home"
-        >
-          <Image
-            source={require(
-              "../../assets/wings-logo.png"
-            )}
-            style={
-              styles.headerLogo
-            }
-            resizeMode="contain"
-          />
-        </Pressable>
+          resizeMode="contain"
+        />
 
         <Text
           style={
             styles.title
           }
         >
-          Schedule
+          Ice Cuts
         </Text>
       </View>
 
@@ -468,7 +354,7 @@ export default function ScheduleScreen({
                 .data
                 .length
             }{" "}
-            events
+            cuts
           </Text>
         </View>
       ) : null}
@@ -512,8 +398,8 @@ export default function ScheduleScreen({
             index,
             section,
           }) => (
-            <EventRow
-              event={
+            <IceCutRow
+              cut={
                 item
               }
               tinted={
@@ -600,8 +486,9 @@ export default function ScheduleScreen({
                   styles.emptyText
                 }
               >
-                No events returned for
-                the next seven days.
+                No ice cuts scheduled
+                for the next seven
+                days.
               </Text>
             </View>
           }
@@ -644,11 +531,6 @@ const styles =
 
       marginBottom:
         26,
-    },
-
-    headerLogoButton: {
-      alignSelf:
-        "flex-start",
     },
 
     title: {
@@ -723,23 +605,23 @@ const styles =
         "600",
     },
 
-    eventRow: {
+    cutRow: {
       flexDirection:
         "row",
 
       minHeight:
-        82,
+        58,
 
       paddingHorizontal:
         20,
     },
 
-    eventRowTinted: {
+    cutRowTinted: {
       backgroundColor:
         colors.surface,
     },
 
-    eventRowDayStart: {
+    cutRowDayStart: {
       marginTop:
         20,
     },
@@ -752,7 +634,7 @@ const styles =
         2,
     },
 
-    startTime: {
+    cutTime: {
       color:
         colors.text,
 
@@ -761,17 +643,6 @@ const styles =
 
       fontWeight:
         "650",
-    },
-
-    endTime: {
-      color:
-        colors.muted,
-
-      fontSize:
-        10,
-
-      marginTop:
-        3,
     },
 
     timelineColumn: {
@@ -810,7 +681,7 @@ const styles =
         5,
     },
 
-    eventDetails: {
+    cutDetails: {
       flex:
         1,
 
@@ -818,10 +689,10 @@ const styles =
         10,
 
       paddingBottom:
-        22,
+        16,
     },
 
-    eventTitle: {
+    cutLabel: {
       color:
         colors.text,
 
@@ -835,76 +706,15 @@ const styles =
         19,
     },
 
-    metaRow: {
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      flexWrap:
-        "wrap",
-
-      rowGap:
-        4,
-
-      marginTop:
-        7,
-    },
-
-    organization: {
-      fontSize:
-        9,
-
-      fontWeight:
-        "700",
-
-      letterSpacing:
-        0.7,
-    },
-
-    metaDot: {
-      width:
-        3,
-
-      height:
-        3,
-
-      borderRadius:
-        3,
-
-      backgroundColor:
-        colors.borderLight,
-
-      marginHorizontal:
-        8,
-    },
-
-    eventType: {
+    cutSubtitle: {
       color:
         colors.muted,
 
       fontSize:
-        10,
-    },
+        11,
 
-    lockerText: {
-      color:
-        colors.textSecondary,
-
-      fontSize:
-        10,
-
-      fontWeight:
-        "700",
-
-      flexShrink:
-        1,
-    },
-
-    lockerValue: {
-      color:
-        colors.wings,
+      marginTop:
+        3,
     },
 
     loading: {
@@ -994,5 +804,8 @@ const styles =
 
       fontSize:
         13,
+
+      textAlign:
+        "center",
     },
   });

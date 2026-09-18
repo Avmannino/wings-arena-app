@@ -27,6 +27,9 @@ const ScheduleContext =
 const PREFERENCES_KEY =
   "wings-arena-notification-preferences-v1";
 
+const SCHEDULE_CACHE_KEY =
+  "wings-arena-schedule-cache-v1";
+
 const DEFAULT_PREFERENCES = {
   notificationsEnabled:
     false,
@@ -104,8 +107,13 @@ export function ScheduleProvider({
     useCallback(
       async ({
         isRefresh = false,
+        silent = false,
       } = {}) => {
-        if (isRefresh) {
+        if (silent) {
+          // Background refresh behind
+          // already-visible cached data —
+          // no loading UI to toggle.
+        } else if (isRefresh) {
           setRefreshing(
             true
           );
@@ -116,7 +124,11 @@ export function ScheduleProvider({
         }
 
         try {
-          setError("");
+          if (
+            !silent
+          ) {
+            setError("");
+          }
 
           const payload =
             await fetchSchedule(
@@ -140,24 +152,54 @@ export function ScheduleProvider({
               null
           );
 
+          const fetchedAt =
+            new Date();
+
           setLastUpdated(
-            new Date()
+            fetchedAt
+          );
+
+          AsyncStorage.setItem(
+            SCHEDULE_CACHE_KEY,
+            JSON.stringify(
+              {
+                events:
+                  sortedEvents,
+
+                meta:
+                  payload.meta ||
+                  null,
+
+                lastUpdated:
+                  fetchedAt.toISOString(),
+              }
+            )
+          ).catch(
+            () => {}
           );
         } catch (
           loadError
         ) {
-          setError(
-            loadError.message ||
-              "Unable to load the Wings Arena schedule."
-          );
+          if (
+            !silent
+          ) {
+            setError(
+              loadError.message ||
+                "Unable to load the Wings Arena schedule."
+            );
+          }
         } finally {
-          setLoading(
-            false
-          );
+          if (
+            !silent
+          ) {
+            setLoading(
+              false
+            );
 
-          setRefreshing(
-            false
-          );
+            setRefreshing(
+              false
+            );
+          }
         }
       },
       []
@@ -238,7 +280,69 @@ export function ScheduleProvider({
   }, []);
 
   useEffect(() => {
-    loadSchedule();
+    let active =
+      true;
+
+    (async () => {
+      let hasCache =
+        false;
+
+      try {
+        const cached =
+          await AsyncStorage.getItem(
+            SCHEDULE_CACHE_KEY
+          );
+
+        if (
+          cached &&
+          active
+        ) {
+          const parsed =
+            JSON.parse(
+              cached
+            );
+
+          if (
+            parsed?.events
+              ?.length
+          ) {
+            setEvents(
+              parsed.events
+            );
+
+            setMeta(
+              parsed.meta ||
+                null
+            );
+
+            setLastUpdated(
+              parsed.lastUpdated
+                ? new Date(
+                    parsed.lastUpdated
+                  )
+                : null
+            );
+
+            setLoading(
+              false
+            );
+
+            hasCache =
+              true;
+          }
+        }
+      } catch {
+        // Ignore malformed
+        // cache entries.
+      }
+
+      if (active) {
+        loadSchedule({
+          silent:
+            hasCache,
+        });
+      }
+    })();
 
     const interval =
       setInterval(
@@ -251,10 +355,14 @@ export function ScheduleProvider({
         5 * 60 * 1000
       );
 
-    return () =>
+    return () => {
+      active =
+        false;
+
       clearInterval(
         interval
       );
+    };
   }, [loadSchedule]);
 
   useEffect(() => {
