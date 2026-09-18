@@ -30,6 +30,7 @@ import withSlideIn from "./src/components/withSlideIn";
 import HomeScreen from "./src/screens/HomeScreen";
 import ScheduleScreen from "./src/screens/ScheduleScreen";
 import IceCutsScreen from "./src/screens/IceCutsScreen";
+import FacilitiesScreen from "./src/screens/FacilitiesScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 
 import {
@@ -47,6 +48,9 @@ const AnimatedScheduleScreen =
 
 const AnimatedIceCutsScreen =
   withSlideIn(IceCutsScreen);
+
+const AnimatedFacilitiesScreen =
+  withSlideIn(FacilitiesScreen);
 
 const AnimatedSettingsScreen =
   withSlideIn(SettingsScreen);
@@ -103,6 +107,14 @@ function getTabIcon(
     return focused
       ? "snow"
       : "snow-outline";
+  }
+
+  if (
+    routeName === "Facilities"
+  ) {
+    return focused
+      ? "clipboard"
+      : "clipboard-outline";
   }
 
   return focused
@@ -224,10 +236,23 @@ export default function App() {
             />
 
             <Tab.Screen
+              name="Facilities"
+              component={
+                AnimatedFacilitiesScreen
+              }
+            />
+
+            <Tab.Screen
               name="Settings"
               component={
                 AnimatedSettingsScreen
               }
+              options={{
+                tabBarItemStyle: {
+                  display:
+                    "none",
+                },
+              }}
             />
           </Tab.Navigator>
         </NavigationContainer>

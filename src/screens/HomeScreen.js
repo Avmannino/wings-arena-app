@@ -843,6 +843,14 @@ export default function HomeScreen({
       ? iceCutState.inProgress
       : false;
 
+  const iceCutMinutes =
+    nextIceCut
+      ? minutesBetween(
+          now,
+          nextIceCut.time
+        )
+      : 0;
+
   const futureEvents =
     useMemo(
       () =>
@@ -1007,22 +1015,55 @@ export default function HomeScreen({
               styles.headerRight
             }
           >
-            <Pressable
+            <View
               style={
-                styles.refreshButton
-              }
-              onPress={
-                refresh
+                styles.headerActions
               }
             >
-              <Text
+              <Pressable
                 style={
-                  styles.refreshButtonText
+                  styles.iconButton
                 }
+                onPress={() =>
+                  navigation.navigate(
+                    "Settings"
+                  )
+                }
+                accessibilityRole="button"
+                accessibilityLabel="Settings"
               >
-                REFRESH
-              </Text>
-            </Pressable>
+                <Ionicons
+                  name="settings-outline"
+                  size={
+                    18
+                  }
+                  color={
+                    colors.textSecondary
+                  }
+                />
+              </Pressable>
+
+              <Pressable
+                style={
+                  styles.iconButton
+                }
+                onPress={
+                  refresh
+                }
+                accessibilityRole="button"
+                accessibilityLabel="Refresh"
+              >
+                <Ionicons
+                  name="refresh"
+                  size={
+                    18
+                  }
+                  color={
+                    colors.textSecondary
+                  }
+                />
+              </Pressable>
+            </View>
 
             <Text
               style={
@@ -1093,18 +1134,38 @@ export default function HomeScreen({
               >
                 In progress
               </PulsingText>
+            ) : iceCutMinutes <=
+              10 ? (
+              <PulsingText
+                style={[
+                  styles.iceCutCountdown,
+                  {
+                    color:
+                      colors.red,
+                  },
+                ]}
+              >
+                in{" "}
+                {formatMinutes(
+                  iceCutMinutes
+                )}
+              </PulsingText>
             ) : (
               <Text
-                style={
-                  styles.iceCutCountdown
-                }
+                style={[
+                  styles.iceCutCountdown,
+                  {
+                    color:
+                      iceCutMinutes >
+                      30
+                        ? colors.green
+                        : colors.yellow,
+                  },
+                ]}
               >
-                In{" "}
+                in{" "}
                 {formatMinutes(
-                  minutesBetween(
-                    now,
-                    nextIceCut.time
-                  )
+                  iceCutMinutes
                 )}
               </Text>
             )}
@@ -1363,7 +1424,27 @@ const styles =
         10,
     },
 
-    refreshButton: {
+    headerActions: {
+      flexDirection:
+        "row",
+
+      gap:
+        8,
+    },
+
+    iconButton: {
+      width:
+        38,
+
+      height:
+        38,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
       borderWidth:
         1,
 
@@ -1373,28 +1454,8 @@ const styles =
       backgroundColor:
         colors.surface,
 
-      paddingHorizontal:
-        13,
-
-      paddingVertical:
-        9,
-
       borderRadius:
         8,
-    },
-
-    refreshButtonText: {
-      color:
-        colors.textSecondary,
-
-      fontSize:
-        9,
-
-      fontWeight:
-        "700",
-
-      letterSpacing:
-        1,
     },
 
     iceCutBanner: {
