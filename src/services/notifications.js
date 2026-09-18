@@ -137,49 +137,49 @@ export async function syncScheduleNotifications(
         MAX_SCHEDULED_ALERTS
       );
 
-  for (
-    const event of
-    candidates
-  ) {
-    await Notifications.scheduleNotificationAsync(
-      {
-        content: {
-          title:
-            "Up Next at Wings",
+  await Promise.all(
+    candidates.map(
+      (event) =>
+        Notifications.scheduleNotificationAsync(
+          {
+            content: {
+              title:
+                "Up Next at Wings",
 
-          body:
-            `${event.title} ` +
-            `starts at ` +
-            `${formatTime(
-              event.start
-            )}.`,
+              body:
+                `${event.title} ` +
+                `starts at ` +
+                `${formatTime(
+                  event.start
+                )}.`,
 
-          sound:
-            true,
+              sound:
+                true,
 
-          data: {
-            eventId:
-              event.id,
+              data: {
+                eventId:
+                  event.id,
 
-            source:
-              event.source,
-          },
-        },
+                source:
+                  event.source,
+              },
+            },
 
-        trigger: {
-          type:
-            Notifications
-              .SchedulableTriggerInputTypes
-              .DATE,
+            trigger: {
+              type:
+                Notifications
+                  .SchedulableTriggerInputTypes
+                  .DATE,
 
-          date:
-            new Date(
-              event.notificationTime
-            ),
-        },
-      }
-    );
-  }
+              date:
+                new Date(
+                  event.notificationTime
+                ),
+            },
+          }
+        )
+    )
+  );
 
   return candidates.length;
 }
