@@ -2,11 +2,14 @@ import {
   Fragment,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Image,
   Pressable,
   RefreshControl,
@@ -81,6 +84,62 @@ function getOrganizationLabel(
   }
 
   return "WINGS";
+}
+
+function PulsingDot() {
+  const opacity =
+    useRef(
+      new Animated.Value(1)
+    ).current;
+
+  useEffect(() => {
+    const animation =
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(
+            opacity,
+            {
+              toValue: 0.15,
+              duration: 1400,
+              easing:
+                Easing.inOut(
+                  Easing.ease
+                ),
+              useNativeDriver: true,
+            }
+          ),
+
+          Animated.timing(
+            opacity,
+            {
+              toValue: 1,
+              duration: 1400,
+              easing:
+                Easing.inOut(
+                  Easing.ease
+                ),
+              useNativeDriver: true,
+            }
+          ),
+        ])
+      );
+
+    animation.start();
+
+    return () =>
+      animation.stop();
+  }, [opacity]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.liveStatusDot,
+        {
+          opacity,
+        },
+      ]}
+    />
+  );
 }
 
 function OrganizationLabel({
@@ -217,11 +276,7 @@ function CurrentEventCard({
             styles.liveStatus
           }
         >
-          <View
-            style={
-              styles.liveStatusDot
-            }
-          />
+          <PulsingDot />
 
           <Text
             style={
@@ -847,15 +902,51 @@ export default function HomeScreen({
           }
         >
           <View>
-            <Image
-              source={require(
-                "../../assets/wings+.png"
-              )}
+            <Pressable
               style={
-                styles.headerLogo
+                styles.headerLogoButton
               }
-              resizeMode="contain"
-            />
+              onPress={() =>
+                navigation.navigate(
+                  "Home"
+                )
+              }
+              accessibilityRole="button"
+              accessibilityLabel="Go to home"
+            >
+              <Image
+                source={require(
+                  "../../assets/wings+.png"
+                )}
+                style={
+                  styles.headerLogo
+                }
+                resizeMode="contain"
+              />
+            </Pressable>
+          </View>
+
+          <View
+            style={
+              styles.headerRight
+            }
+          >
+            <Pressable
+              style={
+                styles.refreshButton
+              }
+              onPress={
+                refresh
+              }
+            >
+              <Text
+                style={
+                  styles.refreshButtonText
+                }
+              >
+                REFRESH
+              </Text>
+            </Pressable>
 
             <Text
               style={
@@ -867,23 +958,6 @@ export default function HomeScreen({
               )}
             </Text>
           </View>
-
-          <Pressable
-            style={
-              styles.refreshButton
-            }
-            onPress={
-              refresh
-            }
-          >
-            <Text
-              style={
-                styles.refreshButtonText
-              }
-            >
-              REFRESH
-            </Text>
-          </Pressable>
         </View>
 
         {loading &&
@@ -973,15 +1047,6 @@ export default function HomeScreen({
                   }
                 >
                   Later Today
-                </Text>
-
-                <Text
-                  style={
-                    styles.sectionSubheading
-                  }
-                >
-                  Remaining Wings Arena
-                  schedule
                 </Text>
               </View>
 
@@ -1098,7 +1163,7 @@ const styles =
 
     headerLogo: {
       height:
-        28,
+        31,
 
       aspectRatio:
         1925 / 342,
@@ -1107,15 +1172,31 @@ const styles =
         "flex-start",
     },
 
+    headerLogoButton: {
+      alignSelf:
+        "flex-start",
+
+      top:
+        19,
+    },
+
+    headerRight: {
+      alignItems:
+        "flex-end",
+    },
+
     headerDate: {
       color:
         colors.textSecondary,
 
       fontSize:
-        13,
+        15,
 
       marginTop:
-        5,
+        2,
+
+      top:
+        10,
     },
 
     refreshButton: {
@@ -1328,10 +1409,10 @@ const styles =
 
     liveStatusDot: {
       width:
-        6,
+        11,
 
       height:
-        6,
+        11,
 
       borderRadius:
         10,
@@ -1345,7 +1426,7 @@ const styles =
         colors.green,
 
       fontSize:
-        9,
+        15,
 
       fontWeight:
         "700",
@@ -1712,17 +1793,6 @@ const styles =
 
       fontWeight:
         "650",
-    },
-
-    sectionSubheading: {
-      color:
-        colors.muted,
-
-      fontSize:
-        11,
-
-      marginTop:
-        3,
     },
 
     viewSchedule: {

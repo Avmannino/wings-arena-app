@@ -6,6 +6,7 @@ import {
 import {
   ActivityIndicator,
   Image,
+  Pressable,
   RefreshControl,
   SectionList,
   StyleSheet,
@@ -233,7 +234,9 @@ function EventRow({
   );
 }
 
-export default function ScheduleScreen() {
+export default function ScheduleScreen({
+  navigation,
+}) {
   const {
     events,
     loading,
@@ -311,15 +314,28 @@ export default function ScheduleScreen() {
           styles.header
         }
       >
-        <Image
-          source={require(
-            "../../assets/wings+.png"
-          )}
+        <Pressable
           style={
-            styles.headerLogo
+            styles.headerLogoButton
           }
-          resizeMode="contain"
-        />
+          onPress={() =>
+            navigation.navigate(
+              "Home"
+            )
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Go to home"
+        >
+          <Image
+            source={require(
+              "../../assets/wings+.png"
+            )}
+            style={
+              styles.headerLogo
+            }
+            resizeMode="contain"
+          />
+        </Pressable>
 
         <Text
           style={
@@ -516,6 +532,11 @@ const styles =
       aspectRatio:
         1925 / 342,
 
+      alignSelf:
+        "flex-start",
+    },
+
+    headerLogoButton: {
       alignSelf:
         "flex-start",
     },

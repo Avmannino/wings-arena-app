@@ -1,6 +1,7 @@
 import {
   Alert,
   Image,
+  Pressable,
   StyleSheet,
   Switch,
   Text,
@@ -94,7 +95,9 @@ function SettingRow({
   );
 }
 
-export default function SettingsScreen() {
+export default function SettingsScreen({
+  navigation,
+}) {
   const {
     meta,
     preferences,
@@ -158,15 +161,28 @@ export default function SettingsScreen() {
           styles.content
         }
       >
-        <Image
-          source={require(
-            "../../assets/wings+.png"
-          )}
+        <Pressable
           style={
-            styles.headerLogo
+            styles.headerLogoButton
           }
-          resizeMode="contain"
-        />
+          onPress={() =>
+            navigation.navigate(
+              "Home"
+            )
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Go to home"
+        >
+          <Image
+            source={require(
+              "../../assets/wings+.png"
+            )}
+            style={
+              styles.headerLogo
+            }
+            resizeMode="contain"
+          />
+        </Pressable>
 
         <Text
           style={
@@ -441,6 +457,11 @@ const styles =
       aspectRatio:
         1925 / 342,
 
+      alignSelf:
+        "flex-start",
+    },
+
+    headerLogoButton: {
       alignSelf:
         "flex-start",
     },
