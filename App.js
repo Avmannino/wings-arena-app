@@ -18,8 +18,14 @@ import {
 } from "react-native-safe-area-context";
 
 import {
+  EventDetailProvider,
+} from "./src/context/EventDetailContext";
+
+import {
   ScheduleProvider,
 } from "./src/context/ScheduleContext";
+
+import withSlideIn from "./src/components/withSlideIn";
 
 import HomeScreen from "./src/screens/HomeScreen";
 import ScheduleScreen from "./src/screens/ScheduleScreen";
@@ -32,6 +38,18 @@ import {
 
 const Tab =
   createBottomTabNavigator();
+
+const AnimatedHomeScreen =
+  withSlideIn(HomeScreen);
+
+const AnimatedScheduleScreen =
+  withSlideIn(ScheduleScreen);
+
+const AnimatedIceCutsScreen =
+  withSlideIn(IceCutsScreen);
+
+const AnimatedSettingsScreen =
+  withSlideIn(SettingsScreen);
 
 const navigationTheme = {
   ...DarkTheme,
@@ -96,6 +114,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ScheduleProvider>
+        <EventDetailProvider>
         <NavigationContainer
           theme={
             navigationTheme
@@ -111,6 +130,14 @@ export default function App() {
             }) => ({
               headerShown:
                 false,
+
+              sceneStyle: {
+                overflow:
+                  "hidden",
+
+                backgroundColor:
+                  colors.background,
+              },
 
               tabBarActiveTintColor:
                 colors.text,
@@ -178,32 +205,33 @@ export default function App() {
             <Tab.Screen
               name="Home"
               component={
-                HomeScreen
+                AnimatedHomeScreen
               }
             />
 
             <Tab.Screen
               name="Schedule"
               component={
-                ScheduleScreen
+                AnimatedScheduleScreen
               }
             />
 
             <Tab.Screen
               name="Ice Cuts"
               component={
-                IceCutsScreen
+                AnimatedIceCutsScreen
               }
             />
 
             <Tab.Screen
               name="Settings"
               component={
-                SettingsScreen
+                AnimatedSettingsScreen
               }
             />
           </Tab.Navigator>
         </NavigationContainer>
+        </EventDetailProvider>
       </ScheduleProvider>
     </SafeAreaProvider>
   );

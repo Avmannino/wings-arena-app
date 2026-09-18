@@ -1,8 +1,5 @@
 import {
-  Fragment,
   useMemo,
-  useRef,
-  useState,
 } from "react";
 
 import {
@@ -34,9 +31,13 @@ import {
   getEasternDateKey,
 } from "../utils/dateTime";
 
+import LockerDisplay from "../components/LockerDisplay";
+
+import OrganizationLogo from "../components/OrganizationLogo";
+
 import {
-  parseLockerEntries,
-} from "../utils/lockers";
+  useEventDetail,
+} from "../context/EventDetailContext";
 
 function getOrganizationColor(
   organization
@@ -58,45 +59,31 @@ function getOrganizationColor(
   return colors.wings;
 }
 
-function getOrganizationLabel(
-  organization
-) {
-  if (
-    organization ===
-    "Stateline"
-  ) {
-    return "STATELINE";
-  }
-
-  if (
-    organization ===
-    "GSC"
-  ) {
-    return "GSC";
-  }
-
-  return "WINGS";
-}
-
 function EventRow({
   event,
   tinted,
-  dayStart,
 }) {
+  const {
+    openEvent,
+  } = useEventDetail();
+
   const organizationColor =
     getOrganizationColor(
       event.organization
     );
 
   return (
-    <View
+    <Pressable
       style={[
         styles.eventRow,
         tinted &&
           styles.eventRowTinted,
-        dayStart &&
-          styles.eventRowDayStart,
       ]}
+      onPress={() =>
+        openEvent(
+          event
+        )
+      }
     >
       <View
         style={
@@ -164,19 +151,14 @@ function EventRow({
             styles.metaRow
           }
         >
-          <Text
-            style={[
-              styles.organization,
-              {
-                color:
-                  organizationColor,
-              },
-            ]}
-          >
-            {getOrganizationLabel(
+          <OrganizationLogo
+            organization={
               event.organization
-            )}
-          </Text>
+            }
+            height={
+              18
+            }
+          />
 
           {event.type ? (
             <>
@@ -195,50 +177,19 @@ function EventRow({
               </Text>
             </>
           ) : null}
-
-          {event.lockerNumber ? (
-            <>
-              <View
-                style={
-                  styles.metaDot
-                }
-              />
-
-              <Text
-                style={
-                  styles.lockerText
-                }
-              >
-                LOCKERS{" "}
-                {parseLockerEntries(
-                  event.lockerNumber
-                ).map(
-                  (entry, index) => (
-                    <Fragment
-                      key={
-                        index
-                      }
-                    >
-                      {index > 0
-                        ? ", "
-                        : ""}
-                      <Text
-                        style={
-                          styles.lockerValue
-                        }
-                      >
-                        {entry.id}
-                      </Text>
-                      {entry.rest}
-                    </Fragment>
-                  )
-                )}
-              </Text>
-            </>
-          ) : null}
         </View>
+
+        <LockerDisplay
+          size="sm"
+          lockerNumber={
+            event.lockerNumber
+          }
+          style={
+            styles.lockerBlock
+          }
+        />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -321,9 +272,6 @@ export default function ScheduleScreen({
             colorIndex:
               index % 2,
 
-            first:
-              index === 0,
-
             data,
           })
         );
@@ -331,62 +279,6 @@ export default function ScheduleScreen({
 
       [events]
     );
-
-  const [
-    currentSectionKey,
-    setCurrentSectionKey,
-  ] =
-    useState(
-      null
-    );
-
-  const currentSection =
-    useMemo(
-      () =>
-        sections.find(
-          (section) =>
-            section.key ===
-            currentSectionKey
-        ) ||
-        sections[0] ||
-        null,
-
-      [
-        sections,
-        currentSectionKey,
-      ]
-    );
-
-  const onViewableItemsChanged =
-    useRef(
-      ({
-        viewableItems,
-      }) => {
-        const firstVisible =
-          viewableItems.find(
-            (viewable) =>
-              viewable.isViewable &&
-              viewable.section
-          );
-
-        if (
-          firstVisible
-            ?.section
-            ?.key
-        ) {
-          setCurrentSectionKey(
-            firstVisible
-              .section
-              .key
-          );
-        }
-      }
-    ).current;
-
-  const viewabilityConfig =
-    useRef({
-      itemVisiblePercentThreshold: 1,
-    }).current;
 
   return (
     <SafeAreaView
@@ -424,54 +316,7 @@ export default function ScheduleScreen({
             resizeMode="contain"
           />
         </Pressable>
-
-        <Text
-          style={
-            styles.title
-          }
-        >
-          Schedule
-        </Text>
       </View>
-
-      {currentSection &&
-      !(
-        loading &&
-        !events.length
-      ) ? (
-        <View
-          style={[
-            styles.sectionHeader,
-            currentSection
-              .colorIndex ===
-              1 &&
-              styles.sectionHeaderTinted,
-          ]}
-        >
-          <Text
-            style={
-              styles.sectionTitle
-            }
-          >
-            {
-              currentSection.title
-            }
-          </Text>
-
-          <Text
-            style={
-              styles.sectionCount
-            }
-          >
-            {
-              currentSection
-                .data
-                .length
-            }{" "}
-            events
-          </Text>
-        </View>
-      ) : null}
 
       {loading &&
       !events.length ? (
@@ -509,7 +354,6 @@ export default function ScheduleScreen({
 
           renderItem={({
             item,
-            index,
             section,
           }) => (
             <EventRow
@@ -521,10 +365,47 @@ export default function ScheduleScreen({
                   .colorIndex ===
                 1
               }
-              dayStart={
-                index ===
-                  0 &&
-                !section.first
+            />
+          )}
+
+          renderSectionHeader={({
+            section,
+          }) => (
+            <View
+              style={[
+                styles.sectionHeader,
+                section.colorIndex ===
+                  1 &&
+                  styles.sectionHeaderTinted,
+              ]}
+            >
+              <Text
+                style={
+                  styles.sectionTitle
+                }
+              >
+                {section.title}
+              </Text>
+
+              <Text
+                style={
+                  styles.sectionCount
+                }
+              >
+                {
+                  section
+                    .data
+                    .length
+                }{" "}
+                events
+              </Text>
+            </View>
+          )}
+
+          renderSectionFooter={() => (
+            <View
+              style={
+                styles.sectionFooter
               }
             />
           )}
@@ -537,17 +418,7 @@ export default function ScheduleScreen({
             false
           }
 
-          stickySectionHeadersEnabled={
-            false
-          }
-
-          onViewableItemsChanged={
-            onViewableItemsChanged
-          }
-
-          viewabilityConfig={
-            viewabilityConfig
-          }
+          stickySectionHeadersEnabled
 
           refreshControl={
             <RefreshControl
@@ -634,10 +505,10 @@ const styles =
 
     headerLogo: {
       height:
-        28,
+        31,
 
       width:
-        28 * (1925 / 342),
+        31 * (1925 / 342),
 
       aspectRatio:
         1925 / 342,
@@ -646,26 +517,12 @@ const styles =
         "flex-start",
 
       marginBottom:
-        26,
+        10,
     },
 
     headerLogoButton: {
       alignSelf:
         "flex-start",
-    },
-
-    title: {
-      color:
-        colors.text,
-
-      fontSize:
-        23,
-
-      fontWeight:
-        "700",
-
-      letterSpacing:
-        -0.6,
     },
 
     listContent: {
@@ -694,9 +551,11 @@ const styles =
 
       paddingBottom:
         8,
+    },
 
-      marginBottom:
-        4,
+    sectionFooter: {
+      height:
+        20,
     },
 
     sectionHeaderTinted: {
@@ -740,11 +599,6 @@ const styles =
     eventRowTinted: {
       backgroundColor:
         colors.surface,
-    },
-
-    eventRowDayStart: {
-      marginTop:
-        20,
     },
 
     timeColumn: {
@@ -855,17 +709,6 @@ const styles =
         7,
     },
 
-    organization: {
-      fontSize:
-        9,
-
-      fontWeight:
-        "700",
-
-      letterSpacing:
-        0.7,
-    },
-
     metaDot: {
       width:
         3,
@@ -883,31 +726,17 @@ const styles =
         8,
     },
 
+    lockerBlock: {
+      marginTop:
+        8,
+    },
+
     eventType: {
       color:
         colors.muted,
 
       fontSize:
-        10,
-    },
-
-    lockerText: {
-      color:
-        colors.textSecondary,
-
-      fontSize:
-        10,
-
-      fontWeight:
-        "700",
-
-      flexShrink:
-        1,
-    },
-
-    lockerValue: {
-      color:
-        colors.wings,
+        13,
     },
 
     loading: {

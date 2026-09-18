@@ -1,5 +1,4 @@
 import {
-  Fragment,
   useEffect,
   useMemo,
   useRef,
@@ -45,54 +44,21 @@ import {
 } from "../utils/dateTime";
 
 import {
-  parseLockerEntries,
-} from "../utils/lockers";
-
-import {
   computeIceCuts,
 } from "../utils/iceCuts";
 
-function getOrganizationColor(
-  organization
-) {
-  if (
-    organization ===
-    "Stateline"
-  ) {
-    return colors.purple;
-  }
+import LockerDisplay from "../components/LockerDisplay";
 
-  if (
-    organization ===
-    "GSC"
-  ) {
-    return colors.accent;
-  }
+import OrganizationLogo from "../components/OrganizationLogo";
 
-  return colors.wings;
-}
+import {
+  useEventDetail,
+} from "../context/EventDetailContext";
 
-function getOrganizationLabel(
-  organization
-) {
-  if (
-    organization ===
-    "Stateline"
-  ) {
-    return "STATELINE";
-  }
+const ICE_CUT_MAX_GAP_MS =
+  30 * 60 * 1000;
 
-  if (
-    organization ===
-    "GSC"
-  ) {
-    return "GSC";
-  }
-
-  return "WINGS";
-}
-
-function PulsingDot() {
+function usePulseOpacity() {
   const opacity =
     useRef(
       new Animated.Value(1)
@@ -136,6 +102,13 @@ function PulsingDot() {
       animation.stop();
   }, [opacity]);
 
+  return opacity;
+}
+
+function PulsingDot() {
+  const opacity =
+    usePulseOpacity();
+
   return (
     <Animated.View
       style={[
@@ -148,50 +121,51 @@ function PulsingDot() {
   );
 }
 
-function OrganizationLabel({
-  organization,
+function PulsingText({
+  style,
+  children,
 }) {
-  const color =
-    getOrganizationColor(
-      organization
-    );
+  const opacity =
+    usePulseOpacity();
 
   return (
-    <View
-      style={
-        styles.organizationRow
-      }
+    <Animated.Text
+      style={[
+        style,
+        {
+          opacity,
+        },
+      ]}
     >
-      <View
-        style={[
-          styles.organizationDot,
-          {
-            backgroundColor:
-              color,
-          },
-        ]}
-      />
+      {children}
+    </Animated.Text>
+  );
+}
 
-      <Text
-        style={[
-          styles.organizationText,
-          {
-            color,
-          },
-        ]}
-      >
-        {getOrganizationLabel(
-          organization
-        )}
-      </Text>
-    </View>
+function OrganizationLabel({
+  organization,
+  size = 34,
+}) {
+  return (
+    <OrganizationLogo
+      organization={
+        organization
+      }
+      height={size}
+    />
   );
 }
 
 function CurrentEventCard({
   events,
   now,
+  iceCutInProgress,
+  upNext,
 }) {
+  const {
+    openEvent,
+  } = useEventDetail();
+
   if (
     !events.length
   ) {
@@ -223,22 +197,59 @@ function CurrentEventCard({
           </Text>
         </View>
 
-        <Text
-          style={
-            styles.primaryIdleTitle
-          }
-        >
-          No active scheduled event
-        </Text>
+        {iceCutInProgress ? (
+          <>
+            <Text
+              style={
+                styles.primaryIdleTitle
+              }
+            >
+              Cutting the ice
+            </Text>
 
-        <Text
-          style={
-            styles.primaryIdleCopy
-          }
-        >
-          The rink is currently between
-          scheduled events.
-        </Text>
+            <Text
+              style={[
+                styles.sectionLabel,
+                styles.primaryIdleEyebrow,
+              ]}
+            >
+              STARTING SOON
+            </Text>
+
+            {upNext ? (
+              <Text
+                style={
+                  styles.primaryIdleNext
+                }
+              >
+                {upNext.title}
+                {" · "}
+                {formatTimeRange(
+                  upNext
+                )}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <Text
+              style={
+                styles.primaryIdleTitle
+              }
+            >
+              No active scheduled event
+            </Text>
+
+            <Text
+              style={
+                styles.primaryIdleCopy
+              }
+            >
+              The rink is currently between
+              scheduled events.
+            </Text>
+          </>
+        )}
       </View>
     );
   }
@@ -253,9 +264,14 @@ function CurrentEventCard({
     );
 
   return (
-    <View
+    <Pressable
       style={
         styles.primaryCard
+      }
+      onPress={() =>
+        openEvent(
+          primary
+        )
       }
     >
       <View
@@ -312,61 +328,65 @@ function CurrentEventCard({
         )}
       </Text>
 
-      <View
-        style={
-          styles.primaryFooter
-        }
-      >
-        <OrganizationLabel
-          organization={
-            primary.organization
-          }
-        />
-
+      {minutesLeft <=
+      10 ? (
+        <PulsingText
+          style={[
+            styles.timeRemaining,
+            {
+              color:
+                colors.red,
+            },
+          ]}
+        >
+          {formatMinutes(
+            minutesLeft
+          )}{" "}
+          remaining
+        </PulsingText>
+      ) : (
         <Text
-          style={
-            styles.timeRemaining
-          }
+          style={[
+            styles.timeRemaining,
+            {
+              color:
+                minutesLeft >
+                30
+                  ? colors.green
+                  : colors.yellow,
+            },
+          ]}
         >
           {formatMinutes(
             minutesLeft
           )}{" "}
           remaining
         </Text>
-      </View>
+      )}
 
-      {primary.lockerNumber ? (
-        <Text
+      <View
+        style={
+          styles.primaryFooter
+        }
+      >
+        <View
           style={
-            styles.primaryLocker
+            styles.footerLeft
           }
         >
-          LOCKERS{" "}
-          {parseLockerEntries(
-            primary.lockerNumber
-          ).map(
-            (entry, index) => (
-              <Fragment
-                key={
-                  index
-                }
-              >
-                {index > 0
-                  ? ", "
-                  : ""}
-                <Text
-                  style={
-                    styles.primaryLockerValue
-                  }
-                >
-                  {entry.id}
-                </Text>
-                {entry.rest}
-              </Fragment>
-            )
-          )}
-        </Text>
-      ) : null}
+          <LockerDisplay
+            lockerNumber={
+              primary.lockerNumber
+            }
+          />
+        </View>
+
+        <OrganizationLabel
+          organization={
+            primary.organization
+          }
+        />
+      </View>
 
       {events.length >
       1 ? (
@@ -387,12 +407,17 @@ function CurrentEventCard({
             .slice(1)
             .map(
               (event) => (
-                <View
+                <Pressable
                   key={
                     event.id
                   }
                   style={
                     styles.concurrentRow
+                  }
+                  onPress={() =>
+                    openEvent(
+                      event
+                    )
                   }
                 >
                   <Text
@@ -412,12 +437,12 @@ function CurrentEventCard({
                       event
                     )}
                   </Text>
-                </View>
+                </Pressable>
               )
             )}
         </View>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 
@@ -425,6 +450,10 @@ function NextEventCard({
   events,
   now,
 }) {
+  const {
+    openEvent,
+  } = useEventDetail();
+
   if (
     !events.length
   ) {
@@ -469,9 +498,14 @@ function NextEventCard({
     );
 
   return (
-    <View
+    <Pressable
       style={
         styles.nextCard
+      }
+      onPress={() =>
+        openEvent(
+          primary
+        )
       }
     >
       <View
@@ -492,6 +526,7 @@ function NextEventCard({
             styles.nextCountdown
           }
         >
+          In{" "}
           {formatMinutes(
             startsIn
           )}
@@ -521,53 +556,24 @@ function NextEventCard({
           styles.nextFooter
         }
       >
+        <View
+          style={
+            styles.footerLeft
+          }
+        >
+          <LockerDisplay
+            lockerNumber={
+              primary.lockerNumber
+            }
+          />
+        </View>
+
         <OrganizationLabel
           organization={
             primary.organization
           }
         />
-
-        <Text
-          style={
-            styles.nextStarts
-          }
-        >
-          until start
-        </Text>
       </View>
-
-      {primary.lockerNumber ? (
-        <Text
-          style={
-            styles.nextLocker
-          }
-        >
-          LOCKERS{" "}
-          {parseLockerEntries(
-            primary.lockerNumber
-          ).map(
-            (entry, index) => (
-              <Fragment
-                key={
-                  index
-                }
-              >
-                {index > 0
-                  ? ", "
-                  : ""}
-                <Text
-                  style={
-                    styles.nextLockerValue
-                  }
-                >
-                  {entry.id}
-                </Text>
-                {entry.rest}
-              </Fragment>
-            )
-          )}
-        </Text>
-      ) : null}
 
       {events.length >
       1 ? (
@@ -583,7 +589,7 @@ function NextEventCard({
           start time
         </Text>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 
@@ -591,39 +597,22 @@ function ScheduleRow({
   event,
   isLast,
 }) {
+  const {
+    openEvent,
+  } = useEventDetail();
+
   return (
     <View>
-      <View
+      <Pressable
         style={
           styles.scheduleRow
         }
+        onPress={() =>
+          openEvent(
+            event
+          )
+        }
       >
-        <View
-          style={
-            styles.scheduleTimeColumn
-          }
-        >
-          <Text
-            style={
-              styles.scheduleStart
-            }
-          >
-            {formatTime(
-              event.start
-            )}
-          </Text>
-
-          <Text
-            style={
-              styles.scheduleEnd
-            }
-          >
-            {formatTime(
-              event.end
-            )}
-          </Text>
-        </View>
-
         <View
           style={
             styles.scheduleDetails
@@ -637,12 +626,25 @@ function ScheduleRow({
             {event.title}
           </Text>
 
+          <Text
+            style={
+              styles.scheduleTime
+            }
+          >
+            {formatTimeRange(
+              event
+            )}
+          </Text>
+
           <View
             style={
               styles.scheduleMeta
             }
           >
             <OrganizationLabel
+              size={
+                18
+              }
               organization={
                 event.organization
               }
@@ -666,41 +668,18 @@ function ScheduleRow({
               </>
             ) : null}
           </View>
-
-          {event.lockerNumber ? (
-            <Text
-              style={
-                styles.scheduleLocker
-              }
-            >
-              LOCKERS{" "}
-              {parseLockerEntries(
-                event.lockerNumber
-              ).map(
-                (entry, index) => (
-                  <Fragment
-                    key={
-                      index
-                    }
-                  >
-                    {index > 0
-                      ? ", "
-                      : ""}
-                    <Text
-                      style={
-                        styles.scheduleLockerValue
-                      }
-                    >
-                      {entry.id}
-                    </Text>
-                    {entry.rest}
-                  </Fragment>
-                )
-              )}
-            </Text>
-          ) : null}
         </View>
-      </View>
+
+        <LockerDisplay
+          size="xs"
+          lockerNumber={
+            event.lockerNumber
+          }
+          style={
+            styles.lockerBlockRow
+          }
+        />
+      </Pressable>
 
       {!isLast ? (
         <View
@@ -773,34 +752,79 @@ export default function HomeScreen({
       ]
     );
 
-  const nextIceCut =
+  const iceCutState =
     useMemo(
       () => {
         const nowMs =
           now.getTime();
 
-        return (
+        const cuts =
           computeIceCuts(
             events
-          )
-            .filter(
-              (cut) =>
-                new Date(
-                  cut.time
-                ).getTime() >
-                nowMs
-            )
-            .sort(
-              (a, b) =>
-                new Date(
-                  a.time
-                ).getTime() -
-                new Date(
-                  b.time
-                ).getTime()
-            )[0] ||
-          null
-        );
+          ).sort(
+            (a, b) =>
+              new Date(
+                a.time
+              ).getTime() -
+              new Date(
+                b.time
+              ).getTime()
+          );
+
+        for (
+          const cut of
+          cuts
+        ) {
+          const cutMs =
+            new Date(
+              cut.time
+            ).getTime();
+
+          if (
+            cutMs >
+            nowMs
+          ) {
+            return {
+              cut,
+              inProgress: false,
+            };
+          }
+
+          const nextStartMs =
+            events
+              .map(
+                (event) =>
+                  new Date(
+                    event.start
+                  ).getTime()
+              )
+              .filter(
+                (startMs) =>
+                  startMs >=
+                  cutMs
+              )
+              .sort(
+                (a, b) =>
+                  a - b
+              )[0];
+
+          if (
+            nextStartMs !==
+              undefined &&
+            nextStartMs -
+              cutMs <=
+              ICE_CUT_MAX_GAP_MS &&
+            nowMs <
+              nextStartMs
+          ) {
+            return {
+              cut,
+              inProgress: true,
+            };
+          }
+        }
+
+        return null;
       },
 
       [
@@ -808,6 +832,16 @@ export default function HomeScreen({
         now,
       ]
     );
+
+  const nextIceCut =
+    iceCutState
+      ? iceCutState.cut
+      : null;
+
+  const iceCutInProgress =
+    iceCutState
+      ? iceCutState.inProgress
+      : false;
 
   const futureEvents =
     useMemo(
@@ -1050,6 +1084,30 @@ export default function HomeScreen({
                 }
               </Text>
             </View>
+
+            {iceCutInProgress ? (
+              <PulsingText
+                style={
+                  styles.iceCutInProgress
+                }
+              >
+                In progress
+              </PulsingText>
+            ) : (
+              <Text
+                style={
+                  styles.iceCutCountdown
+                }
+              >
+                In{" "}
+                {formatMinutes(
+                  minutesBetween(
+                    now,
+                    nextIceCut.time
+                  )
+                )}
+              </Text>
+            )}
           </Pressable>
         ) : null}
 
@@ -1110,6 +1168,12 @@ export default function HomeScreen({
               }
               now={
                 now
+              }
+              iceCutInProgress={
+                iceCutInProgress
+              }
+              upNext={
+                nextEvents[0]
               }
             />
 
@@ -1272,8 +1336,12 @@ const styles =
       alignSelf:
         "flex-start",
 
-      top:
-        19,
+      transform: [
+        {
+          translateY:
+            28,
+        },
+      ],
     },
 
     headerRight: {
@@ -1378,6 +1446,44 @@ const styles =
 
       letterSpacing:
         1,
+    },
+
+    lockerBlock: {
+      marginTop:
+        14,
+    },
+
+    lockerBlockRow: {
+      alignSelf:
+        "center",
+
+      marginLeft:
+        14,
+
+      maxWidth:
+        "45%",
+    },
+
+    iceCutCountdown: {
+      color:
+        colors.accent,
+
+      fontSize:
+        12,
+
+      fontWeight:
+        "700",
+    },
+
+    iceCutInProgress: {
+      color:
+        colors.green,
+
+      fontSize:
+        12,
+
+      fontWeight:
+        "700",
     },
 
     iceCutDetail: {
@@ -1520,7 +1626,7 @@ const styles =
         colors.textSecondary,
 
       fontSize:
-        10,
+        13,
 
       fontWeight:
         "700",
@@ -1531,10 +1637,10 @@ const styles =
 
     sectionLabelMuted: {
       color:
-        colors.muted,
+        colors.wings,
 
       fontSize:
-        10,
+        13,
 
       fontWeight:
         "700",
@@ -1613,7 +1719,7 @@ const styles =
         -0.4,
 
       marginTop:
-        20,
+        17,
     },
 
     primaryTime: {
@@ -1635,10 +1741,18 @@ const styles =
         "space-between",
 
       alignItems:
-        "center",
+        "flex-end",
 
       marginTop:
-        22,
+        16,
+    },
+
+    footerLeft: {
+      flex:
+        1,
+
+      paddingRight:
+        12,
     },
 
     timeRemaining: {
@@ -1650,25 +1764,9 @@ const styles =
 
       fontWeight:
         "600",
-    },
-
-    primaryLocker: {
-      color:
-        colors.textSecondary,
-
-      fontSize:
-        12,
-
-      fontWeight:
-        "600",
 
       marginTop:
-        10,
-    },
-
-    primaryLockerValue: {
-      color:
-        colors.wings,
+        6,
     },
 
     primaryIdleTitle: {
@@ -1683,6 +1781,31 @@ const styles =
 
       marginTop:
         20,
+    },
+
+    primaryIdleEyebrow: {
+      color:
+        colors.yellow,
+
+      marginTop:
+        16,
+    },
+
+    primaryIdleNext: {
+      color:
+        colors.textSecondary,
+
+      fontSize:
+        14,
+
+      fontWeight:
+        "600",
+
+      lineHeight:
+        20,
+
+      marginTop:
+        4,
     },
 
     primaryIdleCopy: {
@@ -1792,13 +1915,13 @@ const styles =
 
     nextCountdown: {
       color:
-        colors.textSecondary,
+        colors.accent,
 
       fontSize:
         12,
 
       fontWeight:
-        "600",
+        "700",
     },
 
     nextTitle: {
@@ -1837,37 +1960,10 @@ const styles =
         "space-between",
 
       alignItems:
-        "center",
+        "flex-end",
 
       marginTop:
         16,
-    },
-
-    nextStarts: {
-      color:
-        colors.muted,
-
-      fontSize:
-        11,
-    },
-
-    nextLocker: {
-      color:
-        colors.textSecondary,
-
-      fontSize:
-        11,
-
-      fontWeight:
-        "600",
-
-      marginTop:
-        8,
-    },
-
-    nextLockerValue: {
-      color:
-        colors.wings,
     },
 
     nextEmptyTitle: {
@@ -1893,39 +1989,6 @@ const styles =
 
       marginTop:
         12,
-    },
-
-    organizationRow: {
-      flexDirection:
-        "row",
-
-      alignItems:
-        "center",
-
-      gap:
-        6,
-    },
-
-    organizationDot: {
-      width:
-        6,
-
-      height:
-        6,
-
-      borderRadius:
-        6,
-    },
-
-    organizationText: {
-      fontSize:
-        9,
-
-      fontWeight:
-        "700",
-
-      letterSpacing:
-        0.8,
     },
 
     sectionHeader: {
@@ -1998,39 +2061,20 @@ const styles =
         15,
     },
 
-    scheduleTimeColumn: {
-      width:
-        74,
+    scheduleDetails: {
+      flex:
+        1,
     },
 
-    scheduleStart: {
+    scheduleTime: {
       color:
-        colors.text,
+        colors.textSecondary,
 
       fontSize:
         13,
 
-      fontWeight:
-        "650",
-    },
-
-    scheduleEnd: {
-      color:
-        colors.muted,
-
-      fontSize:
-        11,
-
       marginTop:
-        3,
-    },
-
-    scheduleDetails: {
-      flex:
-        1,
-
-      paddingLeft:
-        14,
+        4,
     },
 
     scheduleTitle: {
@@ -2055,7 +2099,7 @@ const styles =
         "center",
 
       marginTop:
-        7,
+        13,
     },
 
     metaDividerDot: {
@@ -2080,29 +2124,10 @@ const styles =
         colors.muted,
 
       fontSize:
-        10,
+        13,
 
       fontWeight:
         "600",
-    },
-
-    scheduleLocker: {
-      color:
-        colors.textSecondary,
-
-      fontSize:
-        10,
-
-      fontWeight:
-        "700",
-
-      marginTop:
-        5,
-    },
-
-    scheduleLockerValue: {
-      color:
-        colors.wings,
     },
 
     rowSeparator: {
