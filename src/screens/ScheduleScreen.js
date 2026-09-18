@@ -636,6 +636,9 @@ const styles =
       height:
         28,
 
+      width:
+        28 * (1925 / 342),
+
       aspectRatio:
         1925 / 342,
 

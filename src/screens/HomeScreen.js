@@ -484,7 +484,7 @@ function NextEventCard({
             styles.sectionLabelMuted
           }
         >
-          NEXT
+          UP NEXT
         </Text>
 
         <Text
@@ -1257,6 +1257,9 @@ const styles =
     headerLogo: {
       height:
         31,
+
+      width:
+        31 * (1925 / 342),
 
       aspectRatio:
         1925 / 342,
