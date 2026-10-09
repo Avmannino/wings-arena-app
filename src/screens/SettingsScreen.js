@@ -228,7 +228,7 @@ export default function SettingsScreen({
           <SettingRow
             label="Wings programs"
 
-            description="Public Skate, Cosmic Skate, Stick & Puck and other Wings calendar events."
+            description="Public Skate, Cosmic Skate, Stick & Puck and other Wings Arena programs."
 
             value={
               preferences.notifyWings
@@ -290,7 +290,7 @@ export default function SettingsScreen({
           <SettingRow
             label="Stateline"
 
-            description="Stateline events returned by the GSC Crossbar schedule at Wings."
+            description="Stateline practices and games at Wings."
 
             value={
               preferences.notifyStateline
@@ -347,7 +347,7 @@ export default function SettingsScreen({
                   styles.sourceTitle
                 }
               >
-                Wings public calendar
+                Locker Room CSV
               </Text>
 
               <Text
@@ -355,8 +355,7 @@ export default function SettingsScreen({
                   styles.sourceSubtitle
                 }
               >
-                Google Calendar /
-                EZFacility pipeline
+                Synced from EZFacility
               </Text>
             </View>
 
@@ -395,8 +394,8 @@ export default function SettingsScreen({
                   styles.sourceSubtitle
                 }
               >
-                Wings Arena facility
-                events only
+                Team names for GSC &
+                Stateline slots
               </Text>
             </View>
 
